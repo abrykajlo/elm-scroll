@@ -1,31 +1,32 @@
-import StartApp
 import Scroll exposing (Move)
-import Signal exposing (Address)
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Animation as UI
-import Html.Animation.Properties exposing (..)
-import Task exposing (Task)
-import Effects exposing (Never)
+import Animation as UI exposing (px, percent, width, height, backgroundColor)
+import Animation.Properties exposing (..)
 import Time exposing (second)
+import Platform.Cmd as Cmd exposing (Cmd)
 
 main =
     app.html
 
 
 app =
-    StartApp.start
+    Html.program
         { init = init
         , view = view
         , update = update
-        , inputs = [ Signal.map Header scroll ]
+        , subscriptions = subscriptions
         }
 
+subscriptions : Model -> Sub msg
+subscriptions model =
+  scroll Move
 
-port tasks : Signal (Task Never ())
+
+port tasks : (Task Never ()) -> Cmd msg
 port tasks = app.tasks
 
-type Action
+type Msg
     = Header Move
     | Shrink
     | Grow
@@ -33,34 +34,35 @@ type Action
 
 
 type alias Model =
-    { style : UI.Animation }
+    { style : Animation msg }
 
 
+init : Model
 init = 
-    ( Model 
-    <| UI.init 
-        [ Width 100 Percent
-        , Height 90 Px
-        , BackgroundColor 75 75 75 1
+  { style =
+      Animation.style
+        [ Animation.width 100 percent
+        , Animation.height 90 px
+        , Animation.backgroundColor 75 75 75 1
         ]
-    , Effects.none
-    )
+  }
 
 
-update action model =
-    case action of
-        Animate action ->
-            onModel model action
+update : Msg -> Model -> (Model, Cmd Msg)
+update message model =
+    case message of
+        Animate message ->
+            onModel model message
         Grow ->
             UI.animate
                 |> UI.duration (2*second)
                 |> UI.props
-                    [ Height (UI.to 200) Px ]
+                    [ Height (UI.to 200) px ]
                 |> onModel model
         Shrink ->
             UI.animate
                 |> UI.props
-                    [ Height (UI.to 90) Px ]
+                    [ Height (UI.to 90) px ]
                 |> onModel model
         Header move ->
             Scroll.handle
@@ -71,21 +73,24 @@ update action model =
                 ]
                 move model
     
+onModel : Model -> Msg -> (Model, Cmd Msg)
+onModel model message =
+  let
+      newStyle =
+        UI.interrupt
+          [ UI.to message ]
+          model.style
+
+  in
+     { model | style = newStyle }
 
 
-onModel =
-    UI.forwardTo
-        Animate
-        .style
-        (\w style -> {w | style = style})
-
-
-view : Address Action -> Model -> Html
-view address model =
+view : Model -> Html Msg
+view message model =
     div [] 
         [ div [ style <| ("position", "fixed") :: UI.render model.style ]
             []
         , div [ style [("height", "10000px")] ] [] ]
 
 
-port scroll : Signal Move
+port scroll : Move -> Sub msg
