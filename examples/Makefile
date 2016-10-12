@@ -1,2 +1,2 @@
 elm:
-	elm make Header.elm --output=elm.js
+	elm make Header.elm --output=header.js

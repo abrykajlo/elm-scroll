@@ -1,91 +1,114 @@
-import StartApp
+port module Header exposing (..)
 import Scroll exposing (Move)
-import Signal exposing (Address)
 import Html exposing (..)
+import Html.App as App
 import Html.Attributes exposing (..)
-import Html.Animation as UI
-import Html.Animation.Properties exposing (..)
-import Task exposing (Task)
-import Effects exposing (Never)
+import Animation as UI exposing (px, percent, width, height, backgroundColor)
 import Time exposing (second)
+import Platform.Cmd as Cmd exposing (Cmd)
+import Color exposing (rgb, rgba)
 
+main : Program Never
 main =
-    app.html
-
-
-app =
-    StartApp.start
+    App.program
         { init = init
         , view = view
         , update = update
-        , inputs = [ Signal.map Header scroll ]
+        , subscriptions = subscriptions
         }
 
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+    [ UI.subscription Animate [model.style]
+    , scroll Header
+    ]
 
-port tasks : Signal (Task Never ())
-port tasks = app.tasks
 
-type Action
-    = Header Move
+type Msg
+    = Grow
+    | Header Move
     | Shrink
-    | Grow
-    | Animate UI.Action
+    | Animate UI.Msg
 
 
 type alias Model =
-    { style : UI.Animation }
+    { style : UI.State
+    }
 
 
+init : (Model, Cmd Msg)
 init = 
-    ( Model 
-    <| UI.init 
-        [ Width 100 Percent
-        , Height 90 Px
-        , BackgroundColor 75 75 75 1
+  ({ style =
+      UI.style
+        [ UI.width (px 700)
+        , UI.height (px 90)
+        , UI.backgroundColor (rgba 75 75 75 1)
         ]
-    , Effects.none
-    )
+  }
+  , Cmd.none
+  )
 
 
-update action model =
-    case action of
-        Animate action ->
-            onModel model action
-        Grow ->
-            UI.animate
-                |> UI.duration (2*second)
-                |> UI.props
-                    [ Height (UI.to 200) Px ]
-                |> onModel model
-        Shrink ->
-            UI.animate
-                |> UI.props
-                    [ Height (UI.to 90) Px ]
-                |> onModel model
-        Header move ->
-            Scroll.handle
-                [ update Grow
-                  |> Scroll.onCrossDown 400
-                , update Shrink
-                  |> Scroll.onCrossUp 400
+
+update : Msg -> Model -> (Model, Cmd Msg)
+update message model =
+    case message of
+      Header move ->
+        Scroll.handle
+            [ update Grow
+              |> Scroll.onCrossDown 400
+            , update Shrink
+              |> Scroll.onCrossUp 400
+            ]
+            move model
+
+      Grow ->
+        let
+            newStyle =
+              UI.interrupt
+                [ UI.to
+                  [ UI.height (px 200) ]
                 ]
-                move model
+                model.style
+        in
+           ({ model | style = newStyle }, Cmd.none)
+
+      Shrink ->
+        let
+            newStyle =
+              UI.interrupt
+                [ UI.to
+                  [ UI.height (px 90) ]
+                ]
+                model.style
+        in
+           ({ model | style = newStyle }, Cmd.none)
+
+      Animate animMsg ->
+        ({ model | style = UI.update animMsg model.style }, Cmd.none)
     
+onModel : Model -> UI.Msg -> (Model, Cmd Msg)
+onModel model animMsg =
+  ({ model | style = UI.update animMsg model.style }, Cmd.none)
+
+view : Model -> Html Msg
+view model =
+  div []
+    [
+      div
+        (UI.render model.style
+                    ++ [ style
+                         [ ( "position", "fixed" )
+                         ]
+                       ]
+        ) []
+      , div
+          [ style
+            [ ("height", "3000px") ]
+          ]
+          []
+    ]
 
 
-onModel =
-    UI.forwardTo
-        Animate
-        .style
-        (\w style -> {w | style = style})
-
-
-view : Address Action -> Model -> Html
-view address model =
-    div [] 
-        [ div [ style <| ("position", "fixed") :: UI.render model.style ]
-            []
-        , div [ style [("height", "10000px")] ] [] ]
-
-
-port scroll : Signal Move
+port scroll : (Move -> msg) -> Sub msg
