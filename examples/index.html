@@ -8,13 +8,13 @@
 		padding: 0;
 	}
 	</style>
-	<script type="text/javascript" src="elm.js"></script>
+	<script type="text/javascript" src="header.js"></script>
 </head>
 <body>
-<div id="main"></div>
+<div id="header"></div>
 <script>
+  var myApp = Elm.Header.fullscreen();
 	var scroll = window.pageYOffset || document.body.scrollTop;
-	var myApp = Elm.fullscreen(Elm.Main, {scroll: [scroll,scroll]});
 
 	window.onscroll = function() {
 		var newScroll = window.pageYOffset || document.body.scrollTop;
