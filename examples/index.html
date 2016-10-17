@@ -1,11 +1,20 @@
 <!DOCTYPE html>
 <html>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <head>
 	<title>Adam Brykajlo</title>
 	<style>
 	html, head, body {
 		margin: 0;
 		padding: 0;
+	}
+	div:first-child {
+		width: 100%;
+		background-color: rgb(255, 152, 0);
+	}
+	div:last-child {
+		height: 10000px;
+		background-color: white;
 	}
 	</style>
 	<script type="text/javascript" src="elm.js"></script>
@@ -14,7 +23,8 @@
 <div id="main"></div>
 <script>
 	var scroll = window.pageYOffset || document.body.scrollTop;
-	var myApp = Elm.fullscreen(Elm.Main, {scroll: [scroll,scroll]});
+	var mountNode = document.getElementById('main');
+	var myApp = Elm.Main.embed(mountNode);
 
 	window.onscroll = function() {
 		var newScroll = window.pageYOffset || document.body.scrollTop;
