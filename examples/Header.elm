@@ -1,5 +1,4 @@
 import Html
-import Html.App as App
 import Scroll exposing (Move)
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -10,7 +9,7 @@ import Ports exposing (..)
 
 
 main =
-    App.program
+    program
         { init = init
         , subscriptions = subscriptions
         , update = update
